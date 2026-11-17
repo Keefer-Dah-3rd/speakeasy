@@ -84,6 +84,11 @@ enum MugArt {
 
         let lift = hop * (5 + 7 * pose.level)
 
+        // The drink inside stays roughly level as the glass leans, and lags a
+        // little behind the sway so it sloshes.
+        let sway = listening ? 8 * energy * (.pi / beat) * cos(.pi * pose.time / beat) : 0
+        let tilt = CGFloat(max(-0.45, min(0.45, tan((-lean - sway * 0.09) * .pi / 180))))
+
         // Ground shadow, which shrinks as the mug leaves the ground.
         let shadowWidth = pose.drink.shadowWidth * scale * (1 - 0.22 * hop)
         let shadowHeight = 8 * scale
@@ -104,14 +109,18 @@ enum MugArt {
 
             if pose.drink == .beer {
                 drawHandle(&layer)
-                drawBody(&layer, time: pose.time, drain: drain, energy: energy)
+                drawBody(&layer, time: pose.time, drain: drain, energy: energy, tilt: tilt)
                 drawFoam(&layer, time: pose.time, wobble: listening ? energy : 0.15)
             } else {
                 DrinkArt.draw(
                     &layer, drink: pose.drink, time: pose.time, drain: drain,
-                    energy: energy, wobble: listening ? energy : 0.15)
+                    energy: energy, wobble: listening ? energy : 0.15, tilt: tilt, listening: listening)
             }
         }
+
+        DrinkArt.drawAround(
+            &haloed, drink: pose.drink, time: pose.time, phase: pose.phase, phaseTime: pose.phaseTime,
+            energy: energy, beat: beat)
     }
 
     // MARK: Parts
@@ -139,7 +148,7 @@ enum MugArt {
         layer.stroke(handle, with: .color(glass), style: StrokeStyle(lineWidth: 5.5, lineCap: .round))
     }
 
-    private static func drawBody(_ layer: inout GraphicsContext, time: Double, drain: Double, energy: Double) {
+    private static func drawBody(_ layer: inout GraphicsContext, time: Double, drain: Double, energy: Double, tilt: CGFloat) {
         let body = bodyPath
         layer.fill(body, with: .color(glass))
 
@@ -152,7 +161,7 @@ enum MugArt {
             beer.move(to: CGPoint(x: 28, y: 96))
             for x in stride(from: 28.0, through: 86.0, by: 2.0) {
                 let wave = sin(x * 0.28 + time * 7) * 1.2 * energy
-                beer.addLine(to: CGPoint(x: x, y: top + wave))
+                beer.addLine(to: CGPoint(x: x, y: top + wave + (x - 57) * tilt))
             }
             beer.addLine(to: CGPoint(x: 86, y: 96))
             beer.closeSubpath()

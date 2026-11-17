@@ -66,12 +66,30 @@ enum DevTools {
         let still = drinks.map { drink in
             MugPose(time: 0.92, phase: .listening, phaseTime: 1, level: 0, drink: drink)
         }
-        write(sheet(still, background: light), to: folder.appendingPathComponent("drinks-light.png"))
-        write(sheet(dancing, background: dark), to: folder.appendingPathComponent("drinks-dark.png"))
-        write(sheet(chugging, background: light), to: folder.appendingPathComponent("drinks-chug.png"))
+        write(grid(still, background: light), to: folder.appendingPathComponent("drinks-light.png"))
+        write(grid(dancing, background: dark), to: folder.appendingPathComponent("drinks-dark.png"))
+        write(grid(chugging, background: light), to: folder.appendingPathComponent("drinks-chug.png"))
         write(
-            sheet(still, background: light, cell: 150, scale: 2),
+            grid(still, background: light, cell: 150, scale: 2),
             to: folder.appendingPathComponent("drinks-actual-size.png"))
+
+        // The fantasy drinks' special moves, one row per moment of the move,
+        // then popping in and popping out.
+        let fantasy = Array(drinks.drop { $0 != .dragonsBlood })
+        var moves: [MugPose] = []
+        for progress in [0.2, 0.45, 0.8] {
+            for drink in fantasy {
+                let time = 1.6 + 4.2 + 1.3 * progress
+                moves.append(MugPose(time: time, phase: .listening, phaseTime: time, level: 0.5, drink: drink))
+            }
+        }
+        for drink in fantasy {
+            moves.append(MugPose(time: 0.16, phase: .listening, phaseTime: 0.16, level: 0, drink: drink))
+        }
+        for drink in fantasy {
+            moves.append(MugPose(time: 3, phase: .leaving, phaseTime: 0.08, level: 0, finished: true, drink: drink))
+        }
+        write(grid(moves, background: light, columns: fantasy.count), to: folder.appendingPathComponent("drinks-moves.png"))
 
         let icon = ImageRenderer(content: IconArt())
         icon.scale = 1
@@ -86,6 +104,31 @@ enum DevTools {
             ForEach(0..<poses.count, id: \.self) { index in
                 MugCanvas(pose: poses[index])
                     .frame(width: cell, height: cell)
+            }
+        }
+        .background(background)
+
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = scale
+        return renderer.nsImage
+    }
+
+    /// Like `sheet`, but wrapped into rows.
+    @MainActor
+    private static func grid(
+        _ poses: [MugPose], background: Color, cell: CGFloat = 200, scale: CGFloat = 1, columns: Int = 7
+    ) -> NSImage? {
+        let rows = stride(from: 0, to: poses.count, by: columns).map {
+            Array(poses[$0..<min($0 + columns, poses.count)])
+        }
+        let view = VStack(alignment: .leading, spacing: 0) {
+            ForEach(0..<rows.count, id: \.self) { row in
+                HStack(spacing: 0) {
+                    ForEach(0..<rows[row].count, id: \.self) { index in
+                        MugCanvas(pose: rows[row][index])
+                            .frame(width: cell, height: cell)
+                    }
+                }
             }
         }
         .background(background)
