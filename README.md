@@ -75,6 +75,14 @@ This produces `build/Speakeasy.app`. Open it, and the setup window walks through
 
 `build.sh` signs the app with your Apple Development certificate if you have one, so macOS keeps those permissions between rebuilds. Without a certificate the app is signed ad hoc and the permissions must be granted again after each rebuild.
 
+### Installing
+
+```bash
+./install.sh
+```
+
+This builds the app, installs it as `/Applications/Speakeasy.app` (replacing any older copy), adds it to the Dock and puts a Speakeasy shortcut on the Desktop, then opens it. Run it again after each change; it leaves the Dock and Desktop icons alone once they exist.
+
 ### Whisper libraries
 
 Speakeasy links [whisper.cpp](https://github.com/ggml-org/whisper.cpp) v1.9.5 as static libraries in `Vendor/whisper/lib`. The committed libraries were compiled on an **Intel** Mac (AVX2, FMA, F16C and Accelerate; Metal and Core ML off). On an Apple silicon Mac, or an Intel Mac without those instructions, rebuild them first:
