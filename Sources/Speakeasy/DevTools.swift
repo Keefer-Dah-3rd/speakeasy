@@ -55,6 +55,24 @@ enum DevTools {
         write(bubbleSheet(captions, pose: dance[2], background: light), to: folder.appendingPathComponent("bubble-light.png"))
         write(bubbleSheet(captions, pose: loud[5], background: dark), to: folder.appendingPathComponent("bubble-dark.png"))
 
+        // Every drink in the rotation: dancing, then knocking it back.
+        let drinks = Drink.allCases
+        let dancing = drinks.enumerated().map { index, drink in
+            MugPose(time: 0.63 + Double(index) * 0.11, phase: .listening, phaseTime: 1, level: 0.4, drink: drink)
+        }
+        let chugging = drinks.map { drink in
+            MugPose(time: 2.4, phase: .processing, phaseTime: 0.4, level: 0, drink: drink)
+        }
+        let still = drinks.map { drink in
+            MugPose(time: 0.92, phase: .listening, phaseTime: 1, level: 0, drink: drink)
+        }
+        write(sheet(still, background: light), to: folder.appendingPathComponent("drinks-light.png"))
+        write(sheet(dancing, background: dark), to: folder.appendingPathComponent("drinks-dark.png"))
+        write(sheet(chugging, background: light), to: folder.appendingPathComponent("drinks-chug.png"))
+        write(
+            sheet(still, background: light, cell: 150, scale: 2),
+            to: folder.appendingPathComponent("drinks-actual-size.png"))
+
         let icon = ImageRenderer(content: IconArt())
         icon.scale = 1
         write(icon.nsImage, to: folder.appendingPathComponent("icon-1024.png"))

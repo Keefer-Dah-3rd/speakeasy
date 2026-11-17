@@ -15,6 +15,7 @@ struct MugPose {
     var phaseTime: Double       // seconds since the phase began
     var level: Double           // 0...1, how loud the microphone is
     var finished: Bool = false  // true when leaving after a completed dictation
+    var drink: Drink = .beer    // which drink is dancing this time
 }
 
 struct MugCanvas: View {
@@ -84,7 +85,7 @@ enum MugArt {
         let lift = hop * (5 + 7 * pose.level)
 
         // Ground shadow, which shrinks as the mug leaves the ground.
-        let shadowWidth = 52 * scale * (1 - 0.22 * hop)
+        let shadowWidth = pose.drink.shadowWidth * scale * (1 - 0.22 * hop)
         let shadowHeight = 8 * scale
         ctx.fill(
             Path(ellipseIn: CGRect(
@@ -101,9 +102,15 @@ enum MugArt {
             layer.scaleBy(x: scale * (1 + 0.06 * squash), y: scale * (1 - 0.08 * squash))
             layer.translateBy(x: -base.x, y: -base.y)
 
-            drawHandle(&layer)
-            drawBody(&layer, time: pose.time, drain: drain, energy: energy)
-            drawFoam(&layer, time: pose.time, wobble: listening ? energy : 0.15)
+            if pose.drink == .beer {
+                drawHandle(&layer)
+                drawBody(&layer, time: pose.time, drain: drain, energy: energy)
+                drawFoam(&layer, time: pose.time, wobble: listening ? energy : 0.15)
+            } else {
+                DrinkArt.draw(
+                    &layer, drink: pose.drink, time: pose.time, drain: drain,
+                    energy: energy, wobble: listening ? energy : 0.15)
+            }
         }
     }
 
@@ -232,6 +239,7 @@ final class MugModel: ObservableObject {
     private(set) var phase: MugPhase = .listening
     private(set) var phaseStart = Date()
     private(set) var finished = false
+    private(set) var drink: Drink = .beer
 
     /// Raw microphone level, set from outside; `level` eases toward it.
     var targetLevel: Double = 0
@@ -242,6 +250,7 @@ final class MugModel: ObservableObject {
         phase = .listening
         phaseStart = shownAt
         finished = false
+        drink = DrinkRotation.next()
         targetLevel = 0
         level = 0
         running = true
@@ -271,7 +280,8 @@ final class MugModel: ObservableObject {
             phase: phase,
             phaseTime: date.timeIntervalSince(phaseStart),
             level: level,
-            finished: finished)
+            finished: finished,
+            drink: drink)
     }
 }
 
